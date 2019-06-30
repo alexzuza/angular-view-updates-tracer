@@ -13,5 +13,5 @@
     "default_popup": "popup.html"
   },
   "web_accessible_resources": ["js/tracer.js"],
-  "permissions": ["storage", "<all_urls>"]
+  "permissions": ["storage", "activeTab"]
 }

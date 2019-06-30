@@ -2,14 +2,12 @@ import { asElementData, patchViews, setEnabled, setUpdateHandler } from './view'
 import { TraceRenderer } from './trace-renderer';
 import { calculateNodeBoundary } from './utils';
 
-let ng = window['ng'];
-let Zone = window['Zone'];
-
 export function isAngular() {
-  return ng && !!Zone;
+  return window['ng'] && !!window['Zone'];
 }
 
 export function toggleTracing(enabled: boolean) {
+  const ng = window['ng'];
   setEnabled(enabled);
 
   if (enabled) {
@@ -55,7 +53,7 @@ function draw(view) {
         node = nodes.get(renderNode);
       }
 
-      Zone.root.run(() => {
+      window['Zone'].root.run(() => {
         renderer.present(node);
       });
     });
