@@ -1,0 +1,109 @@
+<style>
+  body {
+    margin: 0;
+    min-height: 60px;
+    width: 310px;
+    font-family: 'Segoe UI', 'Lucida Grande', Tahoma, sans-serif;
+    font-size: 14px;
+    padding: 16px;
+  }
+
+  h4 {
+    margin-bottom: 8px;
+  }
+
+  .description {
+    margin: 0 0 10px 0;
+    padding: 0;
+    font-size: 12px;
+  }
+
+  .switch-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .switch {
+    position: relative;
+    display: inline-block;
+    top: 2px;
+    width: 46px;
+    height: 20px;
+    margin-left: 5px;
+  }
+
+  .switch input {
+    display: none;
+  }
+
+  .slider {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: 30px;
+    cursor: pointer;
+    background-color: #ccc;
+  }
+
+  .slider:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 4px;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    background-color: #fff;
+    border-radius: 50%;
+  }
+
+  .switch-label.loaded .slider,
+  .switch-label.loaded .slider:before {
+    transition: 0.4s;
+  }
+
+  input:checked + .slider {
+    background-color: #66bb6a;
+  }
+
+  input:checked + .slider:before {
+    transform: translate(20px, -50%);
+  }
+
+  .actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+  }
+
+  #error {
+    padding-top: 20px;
+    color: #e24646;
+    font-size: 13px;
+  }
+
+  #error:empty {
+    display: none;
+  }
+</style>
+<h4>Angular view updates tracer</h4>
+<p class="description">
+  Chrome extension that enables highlighting view updates in Angular applications built with ViewEngine(>=4.0.0 <9.0.0)
+</p>
+<div class="actions">
+  <a href="https://twitter.com/yurzui/status/1144909800159006721" target="_blank" class="info">About</a>
+  <label class="switch-label" id="switcher">
+    Enable tracing
+    <span class="switch">
+      <input type="checkbox" id="traceSwitcherCbx" />
+      <span class="slider"></span>
+    </span>
+  </label>
+</div>
+<div id="error"></div>
+
+<script src="js/popup.js"></script>
