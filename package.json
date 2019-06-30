@@ -13,24 +13,11 @@
   "devDependencies": {
     "@types/chrome": "0.0.86",
     "copy-webpack-plugin": "^5.0.3",
-    "husky": "^2.7.0",
-    "lint-staged": "^8.2.1",
     "prettier": "^1.18.2",
     "ts-loader": "^6.0.4",
     "typescript": "^3.5.2",
     "webpack": "^4.35.0",
     "webpack-cli": "^3.3.5",
     "webpack-merge": "^4.2.1"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
-  "lint-staged": {
-    "*.{ts,css,json,md}": [
-      "prettier --write",
-      "git add"
-    ]
   }
 }
