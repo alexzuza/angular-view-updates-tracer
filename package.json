@@ -1,14 +1,14 @@
 {
-  "name": "angular-view-updates-tracer",
-  "version": "1.0.0",
-  "description": "Chrome extension that enables highlighting view updates in Angular applications built with ViewEngine(>=4.0.0 <9.0.0)",
+  "name": "angular-component-outliner",
+  "version": "0.0.1",
+  "description": "Chrome extension that enables outline Angular (10.x) components and easily find what given screen consists of.",
   "scripts": {
     "start": "webpack --config config/webpack.dev.js --watch",
     "build": "webpack --config config/webpack.prod.js",
     "clean": "rimraf dist"
   },
   "keywords": [],
-  "author": "Alexey Zuev",
+  "author": "Felix Fatka",
   "license": "MIT",
   "devDependencies": {
     "@types/chrome": "0.0.86",

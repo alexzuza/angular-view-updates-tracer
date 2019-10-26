@@ -1,10 +1,16 @@
-## Angular view updates tracer
+## Angular component outliner
 
-Chrome extension that enables highlighting view updates in Angular applications built with ViewEngine (>=4.0.0 <9.0.0)
+Chrome extension that enables outline of Angular (10.x) components and easily find what given screen consists of. 
 
-Available in Chrome Web Store https://chrome.google.com/webstore/detail/angular-tracer-for-view-u/bdneljfoigfojeenmmgahnkjnkpbellg
+Do you want to get a quick overview of components in your Angular application? Just click and see... 
 
-![Angular view updates tracer](/meta/preview.gif)
+Available in Chrome Web Store
+ 
+Based on a.yurich.zuev: https://chrome.google.com/webstore/detail/angular-tracer-for-view-u/bdneljfoigfojeenmmgahnkjnkpbellg
+
+###### Example:
+
+![alt text](./meta/example.png "Title")
 
 ## Installation
 
@@ -13,6 +19,3 @@ Available in Chrome Web Store https://chrome.google.com/webstore/detail/angular-
 - Open `chrome://extensions/` in your browser and drag and drop the `dist` folder.
 - Enjoy :)
 
-### License
-
-MIT

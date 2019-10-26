@@ -1,4 +1,4 @@
-import { isAngular, toggleTracing } from './trace';
+import { isAngular, toggleTracing, toggleCover, togglePrefix, findPrefixes, clear } from './trace';
 
 function handleMessage(e: MessageEvent) {
   if (!e.data || !Array.isArray(e.data)) {
@@ -23,8 +23,12 @@ function handleMessage(e: MessageEvent) {
 }
 
 const HANDLERS = {
-  toggle: enable => toggleTracing(enable),
-  isAngular: () => isAngular()
+  togglePrefix: prefixes => togglePrefix(prefixes),
+  toggleCover: enable => toggleCover(enable),
+  toggleTracing: enable => toggleTracing(enable),
+  isAngular: () => isAngular(),
+  findPrefixes: () => findPrefixes(),
+  clear: () => clear()
 };
 
 window.addEventListener('message', handleMessage);

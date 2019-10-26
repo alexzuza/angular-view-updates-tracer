@@ -2,7 +2,7 @@
   body {
     margin: 0;
     min-height: 60px;
-    width: 310px;
+    width: 480px;
     font-family: 'Segoe UI', 'Lucida Grande', Tahoma, sans-serif;
     font-size: 14px;
     padding: 16px;
@@ -20,8 +20,10 @@
 
   .switch-label {
     display: flex;
+    justify-content: space-between;
     align-items: center;
     cursor: pointer;
+    margin-bottom: 8px;
   }
 
   .switch {
@@ -80,6 +82,13 @@
     font-size: 13px;
   }
 
+  .switchers {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+
   #error {
     padding-top: 20px;
     color: #e24646;
@@ -89,21 +98,67 @@
   #error:empty {
     display: none;
   }
+
+  #prefixes {
+    background: #f3d1dc;
+    display: flex;
+    flex-direction: column;
+  }
+  .prefixes__pref {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .title_wrapper {
+    display: flex;
+    justify-content: center;
+    border-bottom: 1px solid darkgrey;
+  }
+  .title-wrapper__title {
+    margin-top: 0;
+  }
 </style>
-<h4>Angular view updates tracer</h4>
-<p class="description">
-  Chrome extension that enables highlighting view updates in Angular applications built with ViewEngine(>=4.0.0 <9.0.0)
-</p>
-<div class="actions">
-  <a href="https://twitter.com/yurzui/status/1144909800159006721" target="_blank" class="info">About</a>
-  <label class="switch-label" id="switcher">
-    Enable tracing
-    <span class="switch">
-      <input type="checkbox" id="traceSwitcherCbx" />
-      <span class="slider"></span>
-    </span>
-  </label>
+
+<div class="title-wrapper">
+  <h4 class="title-wrapper__title">Angular component debugger</h4>
 </div>
+
+<p class="description">
+  Chrome extension that outlines Angular (10.x) components.
+</p>
+
+<div class="actions">
+  <a href="https://twitter.com/yurzui/status/1144909800159006721" target="_blank" class="info">Based on View Updates Tracer</a>
+
+  <div class="switchers">
+    <label class="switch-label" id="switcher">
+      Enable tracing
+      <span class="switch">
+        <input type="checkbox" id="traceSwitcherCbx" />
+        <span class="slider"></span>
+      </span>
+    </label>
+
+    <label class="switch-label" id="switcherCover">
+      Enable cover
+      <span class="switch">
+        <input type="checkbox" id="switcherCoverCbx" />
+        <span class="slider"></span>
+      </span>
+    </label>
+  </div>
+
+</div>
+
+<h5>Component name spaces:</h5>
+
+<div id="prefixes"></div>
+
+<h5>Components:</h5>
+
+<div id="components"></div>
+
 <div id="error"></div>
 
 <script src="js/popup.js"></script>
