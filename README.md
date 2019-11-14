@@ -10,6 +10,7 @@ Available in Chrome Web Store https://chrome.google.com/webstore/detail/angular-
 
 - Clone the repository
 - Run `npm install`
+- Run `npm run build`
 - Open `chrome://extensions/` in your browser and drag and drop the `dist` folder.
 - Enjoy :)
 
