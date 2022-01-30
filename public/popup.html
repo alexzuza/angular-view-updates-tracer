@@ -35,9 +35,8 @@
 
   .actions {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 13px;
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   #error {
@@ -131,7 +130,7 @@
 </div>
 
 <p class="description">
-Chrome <a href="https://github.com/felikf/angular-outliner.git">extension</a> that helps to visualise application components by giving them a border.
+  Chrome <a href="https://github.com/felikf/angular-outliner.git">extension</a> that helps to visualise application components by drawing border.
 </p>
 
 <p class="description">
@@ -139,7 +138,7 @@ Chrome <a href="https://github.com/felikf/angular-outliner.git">extension</a> th
   It works on <code>http://localhost:4200</code> only.
 </p>
 
-<p>Components should have <code>display: block;</code>.</p>
+<p class="description">Borders work better for components with <code>host: { display: block; }</code>.</p>
 
 <div class="container" id="container">
   <fieldset>
@@ -157,6 +156,14 @@ Chrome <a href="https://github.com/felikf/angular-outliner.git">extension</a> th
 
       <span class="link bold" id="sortByName">Sort by Name</span>
       <span class="link" id="sortByCount">Sort by Count</span>
+
+      <div style="margin-top: 12px;">
+        <label for='componentNameOrSelector'>Class Name or Selector</label>
+        <select id="componentNameOrSelector">
+          <option selected value="name">Name</option>
+          <option value="selector">Selector</option>
+        </select>
+      </div>
     </div>
 
     <div id="components"></div>
@@ -169,18 +176,25 @@ Chrome <a href="https://github.com/felikf/angular-outliner.git">extension</a> th
         <label class="switch-label" id="switcher">
           Enable tracing
           <span class="switch">
-        <input type="checkbox" id="traceSwitcherCbx" />
-        <span class="slider"></span>
-      </span>
+            <input type="checkbox" id="traceSwitcherCbx" />
+            <span class="slider"></span>
+          </span>
         </label>
 
         <label class="switch-label" id="switcherCover">
           Enable cover
           <span class="switch">
-        <input type="checkbox" id="switcherCoverCbx" />
-        <span class="slider"></span>
-      </span>
+            <input type="checkbox" id="switcherCoverCbx" />
+            <span class="slider"></span>
+          </span>
         </label>
+      </div>
+      <div class="switchers">
+        <label for="componentLabelPosition" style="margin-right: 4px;">Label Position</label>
+        <select id="componentLabelPosition">
+          <option selected value="topLeft">Top Left</option>
+          <option value="topRight">Top Right</option>
+        </select>
       </div>
     </div>
   </fieldset>

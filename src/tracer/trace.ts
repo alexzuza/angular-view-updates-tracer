@@ -22,7 +22,12 @@ export interface NodeComponent {
     enabled: boolean;
     count?: number;
     color?: string;
+    onPush?: boolean;
+    selectors?: string[];
 }
+
+export type ComponentTextPosition = 'topLeft' | 'topRight';
+export type NameOrSelector = 'name' | 'selector';
 
 let _enabled: boolean;
 let _canvas = null;
@@ -32,6 +37,8 @@ let _cover = false;
 let _nodes: NodeBoundary[];
 let prefixes: NodePrefix[] = [];
 let components: NodeComponent[] = [];
+let position: ComponentTextPosition = 'topLeft';
+let nameOrSelector: NameOrSelector = 'selector';
 
 export function isAngular() {
     const isAngular = window['ng'] && !!window['Zone'];
@@ -52,8 +59,7 @@ export function findPrefixes() {
     }
 
     // console.log('findPrefixes prefixes:',  prefixes);
-
-    components.sort((a, b) => a.name.localeCompare(b.name));
+    // components.sort((a, b) => a.name.localeCompare(b.name));
 
     return {
         prefixes,
@@ -105,6 +111,8 @@ function createNodeBoundary(el, level): NodeBoundary | null  {
         if (!componentDescr) {
             components.push({
                 name: componentName,
+                onPush: component.constructor.ɵcmp.onPush,
+                selectors: component.constructor.ɵcmp.selectors,
                 enabled: false,
                 count: 1
             });
@@ -153,9 +161,11 @@ export function toggleCover(enabled: boolean) {
     _draw(_nodes);
 }
 
-export function togglePrefix(payload: { prefixes: NodePrefix[], components: NodeComponent[] }) {
+export function togglePrefix(payload: { prefixes: NodePrefix[], components: NodeComponent[], textPosition: ComponentTextPosition, nameOrSelector: NameOrSelector }) {
     prefixes = payload.prefixes;
     components = payload.components;
+    position = payload.textPosition;
+    nameOrSelector = payload.nameOrSelector;
 
     clearCanvas(_canvas);
     _draw(_nodes);
@@ -179,7 +189,7 @@ function setEnabled(enabled: boolean) {
 }
 
 export function clear(): void {
-    console.log('trace.ts: clear');
+    // console.log('trace.ts: clear');
     clearCanvas(_canvas);
 }
 
@@ -234,7 +244,7 @@ export function drawBorder(ctx, boundary: NodeBoundary) {
 
     if (boundary.name) {
         ctx.fillStyle = color;
-        drawTextBG(ctx, boundary.name, boundary.left, boundary.top, color);
+        drawTextBG(ctx, nameOrSelector === 'selector' ? boundary.nodeName : boundary.name, boundary.left, boundary.top, boundary.width, boundary.height, color);
     }
 }
 
@@ -268,12 +278,14 @@ function getCorrectTextColor(hex) {
     }
 }
 
-function drawTextBG(ctx, txt, x, y, style: string) {
+function drawTextBG(ctx, txt, componentX, componentY, componentWidth, componentHeight, style: string) {
 
     /// lets save current state as we make a lot of changes
     ctx.save();
 
     /// set font
+    // let font = ctx.font;
+    ctx.font = "14px Arial";
     let font = ctx.font;
 
     /// draw text from top - makes life easier at the moment
@@ -282,20 +294,42 @@ function drawTextBG(ctx, txt, x, y, style: string) {
     /// color for background
     ctx.fillStyle = style;
 
-    /// get width of text
-    var width = ctx.measureText(txt).width;
+    /// get componentWidth of text
+    let textDimensions = ctx.measureText(txt);
+
+    let p = computeByStrategy(componentX, componentY, componentWidth, textDimensions.width, font);
 
     /// draw background rect assuming height of font
-    ctx.fillRect(x, y, width, parseInt(font, 10));
+    ctx.fillRect(p.x, p.y, p.width, p.height);
 
     /// text color
     ctx.fillStyle = getCorrectTextColor(style);
 
     /// draw text on top
-    ctx.fillText(txt, x, y);
+    ctx.fillText(txt, p.x, p.y);
 
     /// restore original state
     ctx.restore();
+}
+
+function computeByStrategy(x, y, componentWidth, textWidth, font): { x: number, y: number, width: number, height: number } {
+    switch (position) {
+        case 'topRight':
+            return {
+                x: x + componentWidth - textWidth,
+                y: y,
+                width: textWidth,
+                height: parseInt(font, 10)
+            }
+        case 'topLeft':
+        default:
+            return {
+                x: x,
+                y: y,
+                width: textWidth,
+                height: parseInt(font, 10)
+            }
+    }
 }
 
 function ensureCanvas(canvas, id, zIndex, width?, height?): void {

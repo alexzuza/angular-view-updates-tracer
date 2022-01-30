@@ -4,7 +4,7 @@ let storedPrefixes: NodePrefix[];
 let storedComponents: NodeComponent[];
 
 const sortByNameFn = (a: NodeComponent, b: NodeComponent) => a.name.toLocaleLowerCase().localeCompare(b.name.toLocaleLowerCase());
-const sortByCountFn = (a: NodeComponent, b: NodeComponent) => b.count - a.count;
+const sortByCountFn = (a: NodeComponent, b: NodeComponent) => b.count - a.count === 0 ? sortByNameFn(a, b) : b.count - a.count;
 
 let currentSortFn: (a: NodeComponent, b: NodeComponent) => number = sortByNameFn;
 
@@ -79,27 +79,18 @@ function onDOMContentLoaded() {
     function updateUi() {
         const prefixes = createPrefixes();
         const components = createComponents();
+        const componentLabelPosition = document.getElementById('componentLabelPosition') as HTMLSelectElement;
+        const textPosition = componentLabelPosition.value;
+        let componentNameOrSelectorSelect = document.getElementById('componentNameOrSelector') as HTMLSelectElement;
+        const nameOrSelector = componentNameOrSelectorSelect.value;
 
         chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
             chrome.tabs.sendMessage(tabs[0].id, {
                 type: 'togglePrefix',
-                payload: { prefixes, components }
+                payload: { prefixes, components, textPosition, nameOrSelector }
             });
         });
     }
-
-    const changeColor = function(prefixes: NodePrefix[], prefix: string, el: HTMLDivElement, event) {
-        const value = event.target.value;
-        prefixes.forEach(pref => {
-            if (value.match(/^#(?:[0-9a-fA-F]{3}){1,2}$/)) {
-                el.style.backgroundColor = value;
-                if (pref.prefix === prefix) {
-                    pref.color = value;
-                    updateUi();
-                }
-            }
-        });
-    };
 
     const colors = ['#f3d1dc', '#89aeb2', '#f1e0b0', '#fdcf76', '#d2a3a9', '#c1cd97'];
 
@@ -120,24 +111,33 @@ function onDOMContentLoaded() {
         let sortByName = document.getElementById('sortByName');
         let sortByCount = document.getElementById('sortByCount');
         let toggleSelectAllComponents = document.getElementById('toggleSelectAllComponents') as HTMLInputElement;
+        let componentLabelPositionSelect = document.getElementById('componentLabelPosition') as HTMLSelectElement;
+        let componentNameOrSelectorSelect = document.getElementById('componentNameOrSelector') as HTMLSelectElement;
 
+        componentLabelPositionSelect.addEventListener('change', () => {
+            updateUi();
+        });
+
+        componentNameOrSelectorSelect.addEventListener('change', () => {
+            updateComponents(divComponents, toggleSelectAllComponents.checked);
+        });
 
         toggleSelectAllComponents.addEventListener('click', () => {
-            updateComponents(divComponents, componentFilterInput.value, toggleSelectAllComponents.checked);
+            updateComponents(divComponents, toggleSelectAllComponents.checked);
         });
 
         sortByName.addEventListener('click', () => {
             currentSortFn = sortByNameFn;
             sortByName.classList.add('bold');
             sortByCount.classList.remove('bold');
-            updateComponents(divComponents, componentFilterInput.value, null);
+            updateComponents(divComponents, null);
         });
 
         sortByCount.addEventListener('click', () => {
             currentSortFn = sortByCountFn;
             sortByCount.classList.add('bold');
             sortByName.classList.remove('bold');
-            updateComponents(divComponents, componentFilterInput.value, null);
+            updateComponents(divComponents, null);
         });
 
         if (prefixes.length || components.length) {
@@ -145,18 +145,26 @@ function onDOMContentLoaded() {
         }
 
         componentFilterInput.addEventListener('input', () => {
-           updateComponents(divComponents, componentFilterInput.value, null);
+           updateComponents(divComponents, null);
         });
 
         createPrefixesInputs(prefixes).forEach(prefix => divPrefixes.appendChild(prefix));
-        createComponentInputs(components).forEach(component => divComponents.appendChild(component));
+        // createComponentInputs(components).forEach(component => divComponents.appendChild(component));
+        updateComponents(divComponents, null);
     }
 
-    function updateComponents(divComponents: HTMLElement, filterText: string, masterCheckBox: boolean): void {
+    function updateComponents(divComponents: HTMLElement, masterCheckBox: boolean): void {
+        let componentFilterInput = document.getElementById('componentFilter') as HTMLInputElement;
+        const filterText = componentFilterInput.value;
+
+        let componentNameOrSelectorSelect = document.getElementById('componentNameOrSelector') as HTMLSelectElement;
+        const nameOrSelectorValue = componentNameOrSelectorSelect.value;
+
         removeComponents();
         createComponentInputs(storedComponents,
+          nameOrSelectorValue,
           filterText
-            ? name => !!name.match(new RegExp(filterText))
+            ? component => nameOrSelectorValue === 'selector' ? !!component.selectors.join(', ').match(new RegExp(filterText)) : !!component.name.match(new RegExp(filterText))
             : null,
           currentSortFn,
           masterCheckBox
@@ -190,7 +198,10 @@ function onDOMContentLoaded() {
             inputColor.dataset.prefix = prefix.prefix;
             inputColor.value = color;
 
-            inputColor.addEventListener('input', changeColor.bind(inputColor, prefixes, prefix.prefix, mainDiv));
+            inputColor.addEventListener('input', () => {
+                mainDiv.style.backgroundColor = inputColor.value;
+                updateUi();
+            });
 
             mainDiv.appendChild(prefixCb);
             mainDiv.appendChild(label);
@@ -202,14 +213,15 @@ function onDOMContentLoaded() {
 
     function createComponentInputs(
       components: NodeComponent[],
-      filter?: (name: string) => boolean,
+      nameOrSelector: string,
+      filter?: (name: NodeComponent) => boolean,
       sort?: (a: NodeComponent, b: NodeComponent) => number,
-      masterCheckBox?: boolean | undefined
+      masterCheckBox?: boolean | undefined,
     ): HTMLDivElement[] {
-        // console.log(`filter: ${filter}`); TODO
+        console.log(`filter: ${filter} sort ${sort} masterCheckBox: ${masterCheckBox}`); // TODO
 
         return components
-          .filter(component => !filter || (filter && filter(component.name)))
+          .filter(component => !filter || (filter && filter(component)))
           .sort(sort || sortByNameFn)
           .map((component, i) => {
               const mainDiv: HTMLDivElement = document.createElement('div');
@@ -220,8 +232,7 @@ function onDOMContentLoaded() {
               const id = `pref-${component.name}`;
               const label = document.createElement('label');
               label.htmlFor = id;
-              console.log('AAA ', component);
-              label.textContent = `${component.name} (${component.count})`;
+              label.textContent = `${nameOrSelector === 'selector' ? component.selectors.join(', ') :  component.name} (${component.count})`;
 
               const changeDetectionEl = document.createElement('span');
               changeDetectionEl.textContent = `${component.onPush ? 'OnPush' : 'Default'}`;
@@ -235,7 +246,7 @@ function onDOMContentLoaded() {
               if (masterCheckBox === false || masterCheckBox === true) {
                   prefixCb.checked = masterCheckBox;
               } else {
-                prefixCb.checked = !!filter && filter(component.name);
+                prefixCb.checked = !!filter && filter(component);
               }
 
               const inputId = `input-${component.name}`;
@@ -245,7 +256,10 @@ function onDOMContentLoaded() {
               inputColor.dataset.component = component.name;
               inputColor.value = color;
 
-              // inputColor.addEventListener('input', inputHandler.bind(inputColor, component.name)); // TODO ?
+              inputColor.addEventListener('input', () => {
+                  mainDiv.style.backgroundColor = inputColor.value;
+                  updateUi();
+              });
 
               mainDiv.appendChild(prefixCb);
               mainDiv.appendChild(label);
@@ -262,11 +276,13 @@ function onDOMContentLoaded() {
               type: 'findPrefixes'
           },
           ({ prefixes, components }) => {
+              console.log('sendMessageToFindPrefixes');
+
               if (prefixes && prefixes.length) {
                   storedComponents = components;
                   storedPrefixes = prefixes;
                   buildPopup(prefixes, components);
-                  updateUi(); // draw component on popup open
+                  // updateUi(); // draw component on popup open // TODO needed?
               }
           }
         );
@@ -279,6 +295,8 @@ function onDOMContentLoaded() {
               type: 'isAngular'
           },
           ({ isAngular }) => {
+              console.log('Received is Angular: ', isAngular);
+
               if (isAngular) {
                   sendMessageToFindPrefixes(tabs[0].id);
               } else {
