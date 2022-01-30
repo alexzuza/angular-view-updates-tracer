@@ -218,7 +218,7 @@ function onDOMContentLoaded() {
       sort?: (a: NodeComponent, b: NodeComponent) => number,
       masterCheckBox?: boolean | undefined,
     ): HTMLDivElement[] {
-        console.log(`filter: ${filter} sort ${sort} masterCheckBox: ${masterCheckBox}`); // TODO
+        // console.log(`filter: ${filter} sort ${sort} masterCheckBox: ${masterCheckBox}`); // TODO
 
         return components
           .filter(component => !filter || (filter && filter(component)))
@@ -276,7 +276,7 @@ function onDOMContentLoaded() {
               type: 'findPrefixes'
           },
           ({ prefixes, components }) => {
-              console.log('sendMessageToFindPrefixes');
+              // console.log('sendMessageToFindPrefixes');
 
               if (prefixes && prefixes.length) {
                   storedComponents = components;
@@ -295,7 +295,7 @@ function onDOMContentLoaded() {
               type: 'isAngular'
           },
           ({ isAngular }) => {
-              console.log('Received is Angular: ', isAngular);
+              // console.log('Received is Angular: ', isAngular);
 
               if (isAngular) {
                   sendMessageToFindPrefixes(tabs[0].id);
