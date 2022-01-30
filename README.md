@@ -8,11 +8,14 @@ It is possible to choose between component namespaces determined by prefix (for 
 There are few options you can choose: class name or selector and label position.
 
 It is possible to filter by component name.
-Number in parentheses after component name show instances count of given component.
+A number in parentheses after component name show instances count of given component.
 
-###### Example:
+##### Angular application:
+Must be started in [development mode](https://stackoverflow.com/a/67686819/4420532) (`ng` is available in chrome console).
 
+##### Examples:
 ![alt text](./meta/tour-example.png "Example Tour Of Heroes")
+![alt text](./meta/starter-example.png "Example Angular Stater Application")
 
 ## Installation
 
@@ -20,5 +23,5 @@ Number in parentheses after component name show instances count of given compone
 - Run `npm install`
 - Run `npm run start` 
 - Open `chrome://extensions/` in your browser and drag and drop the `dist` folder.
-- 
+
 
