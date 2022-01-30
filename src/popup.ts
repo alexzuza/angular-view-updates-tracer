@@ -1,5 +1,13 @@
 import { NodeComponent, NodePrefix } from './tracer/trace';
 
+let storedPrefixes: NodePrefix[];
+let storedComponents: NodeComponent[];
+
+const sortByNameFn = (a: NodeComponent, b: NodeComponent) => a.name.toLocaleLowerCase().localeCompare(b.name.toLocaleLowerCase());
+const sortByCountFn = (a: NodeComponent, b: NodeComponent) => b.count - a.count;
+
+let currentSortFn: (a: NodeComponent, b: NodeComponent) => number = sortByNameFn;
+
 function onDOMContentLoaded() {
     const traceSwitcherCbx = document.getElementById('traceSwitcherCbx') as HTMLInputElement;
     const switcherCoverCbx = document.getElementById('switcherCoverCbx') as HTMLInputElement;
@@ -40,7 +48,7 @@ function onDOMContentLoaded() {
 
     function createPrefixes(): NodePrefix[] {
         const inputs: NodeListOf<HTMLInputElement> = document.querySelectorAll('input[data-prefix][type=checkbox]');
-        const prefixes: NodePrefix[] = Array.from(inputs).map(input => {
+        return Array.from(inputs).map(input => {
             let prefix = input.getAttribute('data-prefix');
             let inputColorEl: HTMLInputElement = document.querySelector(`input[data-prefix=${prefix}][type=text]`);
             let color = inputColorEl && inputColorEl.value || 'red';
@@ -51,12 +59,11 @@ function onDOMContentLoaded() {
                 enabled
             };
         });
-        return prefixes;
     }
 
     function createComponents(): NodeComponent[] {
         const inputs: NodeListOf<HTMLInputElement> = document.querySelectorAll('input[data-component][type=checkbox]');
-        const components: NodeComponent[] = Array.from(inputs).map(input => {
+        return Array.from(inputs).map(input => {
             let componentName = input.getAttribute('data-component');
             let inputColorEl: HTMLInputElement = document.querySelector(`input[data-component=${componentName}][type=text]`);
             let color = inputColorEl && inputColorEl.value || 'red';
@@ -67,7 +74,6 @@ function onDOMContentLoaded() {
                 color
             };
         });
-        return components;
     }
 
     function updateUi() {
@@ -99,10 +105,67 @@ function onDOMContentLoaded() {
 
     const randomColorFn: () => string = () => `#${Math.floor(Math.random()*16777215).toString(16)}`;
 
+    function removeComponents(): void {
+        let divComponents = document.getElementById('components');
+        while (divComponents.firstChild) {
+            divComponents.removeChild(divComponents.lastChild);
+        }
+    }
+
     function buildPopup(prefixes: NodePrefix[], components: NodeComponent[]) {
         let divPrefixes = document.getElementById('prefixes');
         let divComponents = document.getElementById('components');
-        prefixes.forEach((prefix, i) => {
+        let container = document.getElementById('container');
+        let componentFilterInput = document.getElementById('componentFilter') as HTMLInputElement;
+        let sortByName = document.getElementById('sortByName');
+        let sortByCount = document.getElementById('sortByCount');
+        let toggleSelectAllComponents = document.getElementById('toggleSelectAllComponents') as HTMLInputElement;
+
+
+        toggleSelectAllComponents.addEventListener('click', () => {
+            updateComponents(divComponents, componentFilterInput.value, toggleSelectAllComponents.checked);
+        });
+
+        sortByName.addEventListener('click', () => {
+            currentSortFn = sortByNameFn;
+            sortByName.classList.add('bold');
+            sortByCount.classList.remove('bold');
+            updateComponents(divComponents, componentFilterInput.value, null);
+        });
+
+        sortByCount.addEventListener('click', () => {
+            currentSortFn = sortByCountFn;
+            sortByCount.classList.add('bold');
+            sortByName.classList.remove('bold');
+            updateComponents(divComponents, componentFilterInput.value, null);
+        });
+
+        if (prefixes.length || components.length) {
+            container.style.display = 'initial';
+        }
+
+        componentFilterInput.addEventListener('input', () => {
+           updateComponents(divComponents, componentFilterInput.value, null);
+        });
+
+        createPrefixesInputs(prefixes).forEach(prefix => divPrefixes.appendChild(prefix));
+        createComponentInputs(components).forEach(component => divComponents.appendChild(component));
+    }
+
+    function updateComponents(divComponents: HTMLElement, filterText: string, masterCheckBox: boolean): void {
+        removeComponents();
+        createComponentInputs(storedComponents,
+          filterText
+            ? name => !!name.match(new RegExp(filterText))
+            : null,
+          currentSortFn,
+          masterCheckBox
+        ).forEach(component => divComponents.appendChild(component));
+        updateUi();
+    }
+
+    function createPrefixesInputs(prefixes: NodePrefix[]): HTMLDivElement[] {
+        return prefixes.map((prefix, i) => {
             const mainDiv: HTMLDivElement = document.createElement('div');
             const color = colors[i] || randomColorFn();
             mainDiv.classList.add('prefixes__pref');
@@ -118,7 +181,7 @@ function onDOMContentLoaded() {
             prefixCb.type = 'checkbox';
             prefixCb.addEventListener('change', updateUi);
             prefixCb.dataset.prefix = prefix.prefix;
-            prefixCb.checked = true;
+            prefixCb.checked = false;
 
             const inputId = `input-${prefix.prefix}`;
             const inputColor = document.createElement('input');
@@ -133,74 +196,96 @@ function onDOMContentLoaded() {
             mainDiv.appendChild(label);
             mainDiv.appendChild(inputColor);
 
-            divPrefixes.appendChild(mainDiv);
-        });
+            return mainDiv;
+        })
+    }
 
-        components.forEach((component, i) => {
-            const mainDiv: HTMLDivElement = document.createElement('div');
-            const color = colors[i] || randomColorFn();
-            mainDiv.classList.add('prefixes__pref');
-            mainDiv.style.backgroundColor = color;
+    function createComponentInputs(
+      components: NodeComponent[],
+      filter?: (name: string) => boolean,
+      sort?: (a: NodeComponent, b: NodeComponent) => number,
+      masterCheckBox?: boolean | undefined
+    ): HTMLDivElement[] {
+        // console.log(`filter: ${filter}`); TODO
 
-            const id = `pref-${component.name}`;
-            const label = document.createElement('label');
-            label.htmlFor = id;
-            label.textContent = `${component.name} (${component.count})`;
+        return components
+          .filter(component => !filter || (filter && filter(component.name)))
+          .sort(sort || sortByNameFn)
+          .map((component, i) => {
+              const mainDiv: HTMLDivElement = document.createElement('div');
+              const color = colors[i] || randomColorFn();
+              mainDiv.classList.add('components__pref');
+              mainDiv.style.backgroundColor = color;
 
-            const prefixCb = document.createElement('input');
-            prefixCb.id = id;
-            prefixCb.type = 'checkbox';
-            prefixCb.addEventListener('change', updateUi);
-            prefixCb.dataset.component = component.name;
-            prefixCb.checked = false;
+              const id = `pref-${component.name}`;
+              const label = document.createElement('label');
+              label.htmlFor = id;
+              console.log('AAA ', component);
+              label.textContent = `${component.name} (${component.count})`;
 
-            const inputId = `input-${component.name}`;
-            const inputColor = document.createElement('input');
-            inputColor.id = inputId;
-            inputColor.type = 'text';
-            inputColor.dataset.component = component.name;
-            inputColor.value = color;
+              const changeDetectionEl = document.createElement('span');
+              changeDetectionEl.textContent = `${component.onPush ? 'OnPush' : 'Default'}`;
 
-            // inputColor.addEventListener('input', inputHandler.bind(inputColor, component.name));
+              const prefixCb = document.createElement('input');
+              prefixCb.id = id;
+              prefixCb.type = 'checkbox';
+              prefixCb.addEventListener('change', updateUi);
+              prefixCb.dataset.component = component.name;
 
-            mainDiv.appendChild(prefixCb);
-            mainDiv.appendChild(label);
-            mainDiv.appendChild(inputColor);
+              if (masterCheckBox === false || masterCheckBox === true) {
+                  prefixCb.checked = masterCheckBox;
+              } else {
+                prefixCb.checked = !!filter && filter(component.name);
+              }
 
-            divComponents.appendChild(mainDiv);
-            i++;
-        });
+              const inputId = `input-${component.name}`;
+              const inputColor = document.createElement('input');
+              inputColor.id = inputId;
+              inputColor.type = 'text';
+              inputColor.dataset.component = component.name;
+              inputColor.value = color;
+
+              // inputColor.addEventListener('input', inputHandler.bind(inputColor, component.name)); // TODO ?
+
+              mainDiv.appendChild(prefixCb);
+              mainDiv.appendChild(label);
+              mainDiv.appendChild(changeDetectionEl);
+              mainDiv.appendChild(inputColor);
+              return mainDiv;
+          })
     }
 
     function sendMessageToFindPrefixes(id) {
         chrome.tabs.sendMessage(
-            id,
-            {
-                type: 'findPrefixes'
-            },
-            ({ prefixes, components }) => {
-                if (prefixes && prefixes.length) {
-                    buildPopup(prefixes, components);
-                    updateUi(); // draw component on popup open
-                }
-            }
+          id,
+          {
+              type: 'findPrefixes'
+          },
+          ({ prefixes, components }) => {
+              if (prefixes && prefixes.length) {
+                  storedComponents = components;
+                  storedPrefixes = prefixes;
+                  buildPopup(prefixes, components);
+                  updateUi(); // draw component on popup open
+              }
+          }
         );
     }
 
     chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
         chrome.tabs.sendMessage(
-            tabs[0].id,
-            {
-                type: 'isAngular'
-            },
-            ({ isAngular }) => {
-                if (isAngular) {
-                    sendMessageToFindPrefixes(tabs[0].id);
-                } else {
-                    switcherElem.style.display = 'none';
-                    errorElem.innerHTML = `This page doesn't appear to be using Angular.`;
-                }
-            }
+          tabs[0].id,
+          {
+              type: 'isAngular'
+          },
+          ({ isAngular }) => {
+              if (isAngular) {
+                  sendMessageToFindPrefixes(tabs[0].id);
+              } else {
+                  switcherElem.style.display = 'none';
+                  errorElem.innerHTML = `This page doesn't appear to be using Angular.`;
+              }
+          }
         );
     });
 }

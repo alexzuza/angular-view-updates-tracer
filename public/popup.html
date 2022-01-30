@@ -1,4 +1,14 @@
+<link rel="stylesheet" href="slider.css">
+
 <style>
+  h1, h2, h3, h4, h5 {
+    margin: 0;
+  }
+
+  fieldset {
+    margin-bottom: 24px;
+  }
+
   body {
     margin: 0;
     min-height: 60px;
@@ -12,81 +22,22 @@
     margin-bottom: 8px;
   }
 
+  .container {
+    display: none;
+  }
+
   .description {
     margin: 0 0 10px 0;
     padding: 0;
     font-size: 12px;
   }
 
-  .switch-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    margin-bottom: 8px;
-  }
-
-  .switch {
-    position: relative;
-    display: inline-block;
-    top: 2px;
-    width: 46px;
-    height: 20px;
-    margin-left: 5px;
-  }
-
-  .switch input {
-    display: none;
-  }
-
-  .slider {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    border-radius: 30px;
-    cursor: pointer;
-    background-color: #ccc;
-  }
-
-  .slider:before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 4px;
-    transform: translateY(-50%);
-    width: 18px;
-    height: 18px;
-    background-color: #fff;
-    border-radius: 50%;
-  }
-
-  .switch-label.loaded .slider,
-  .switch-label.loaded .slider:before {
-    transition: 0.4s;
-  }
-
-  input:checked + .slider {
-    background-color: #66bb6a;
-  }
-
-  input:checked + .slider:before {
-    transform: translate(20px, -50%);
-  }
 
   .actions {
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 13px;
-  }
-
-  .switchers {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    margin-top: 10px;
   }
 
   #error {
@@ -104,19 +55,74 @@
     display: flex;
     flex-direction: column;
   }
+  .title-wrapper__title {
+    margin-top: 0;
+  }
+
+  .componentFilter {
+    margin-bottom: 12px;
+  }
+
+  .componentFilter span {
+    margin-right: 12px;
+  }
+
+  .link {
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  /*noinspection ALL*/
   .prefixes__pref {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
   }
 
-  .title_wrapper {
-    display: flex;
-    justify-content: center;
-    border-bottom: 1px solid darkgrey;
+  /* checkbox */
+  .prefixes__pref *:nth-child(1) {
+    min-width: 5%;
   }
-  .title-wrapper__title {
-    margin-top: 0;
+
+  /* prefix name */
+  .prefixes__pref *:nth-child(2) {
+    min-width: 80%;
+  }
+
+  /* input */
+  .prefixes__pref *:nth-child(3) {
+    min-width: 15%;
+  }
+
+  /*noinspection ALL*/
+  .components__pref {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  /* checkbox */
+  .components__pref *:nth-child(1) {
+    min-width: 5%;
+  }
+
+  /* component name */
+  .components__pref *:nth-child(2) {
+    min-width: 65%;
+  }
+
+  /* change detection */
+  .components__pref *:nth-child(3) {
+    min-width: 15%;
+  }
+
+  /* input */
+  .components__pref *:nth-child(4) {
+    min-width: 15%;
+  }
+
+  .bold {
+    font-weight: 600;
   }
 </style>
 
@@ -125,39 +131,60 @@
 </div>
 
 <p class="description">
-  Chrome extension that outlines Angular (10.x) components.
+Chrome <a href="https://github.com/felikf/angular-outliner.git">extension</a> that helps to visualise application components by giving them a border.
 </p>
 
-<div class="actions">
-  <a href="https://twitter.com/yurzui/status/1144909800159006721" target="_blank" class="info">Based on View Updates Tracer</a>
+<p class="description">
+  For <strong>Angular 10+</strong> components in debug mode.
+  It works on <code>http://localhost:4200</code> only.
+</p>
 
-  <div class="switchers">
-    <label class="switch-label" id="switcher">
-      Enable tracing
-      <span class="switch">
+<p>Components should have <code>display: block;</code>.</p>
+
+<div class="container" id="container">
+  <fieldset>
+    <legend>Component name spaces</legend>
+    <div id="prefixes"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Components</legend>
+    <div class="componentFilter">
+      <input type="checkbox" id="toggleSelectAllComponents"/>
+
+      <label for="componentFilter">Filter: </label>
+      <input type="text" id="componentFilter" placeholder="filter"/>
+
+      <span class="link bold" id="sortByName">Sort by Name</span>
+      <span class="link" id="sortByCount">Sort by Count</span>
+    </div>
+
+    <div id="components"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Options</legend>
+    <div class="actions">
+      <div class="switchers">
+        <label class="switch-label" id="switcher">
+          Enable tracing
+          <span class="switch">
         <input type="checkbox" id="traceSwitcherCbx" />
         <span class="slider"></span>
       </span>
-    </label>
+        </label>
 
-    <label class="switch-label" id="switcherCover">
-      Enable cover
-      <span class="switch">
+        <label class="switch-label" id="switcherCover">
+          Enable cover
+          <span class="switch">
         <input type="checkbox" id="switcherCoverCbx" />
         <span class="slider"></span>
       </span>
-    </label>
-  </div>
-
+        </label>
+      </div>
+    </div>
+  </fieldset>
 </div>
-
-<h5>Component name spaces:</h5>
-
-<div id="prefixes"></div>
-
-<h5>Components:</h5>
-
-<div id="components"></div>
 
 <div id="error"></div>
 
