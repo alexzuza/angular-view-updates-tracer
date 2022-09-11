@@ -4,7 +4,7 @@ import { toggleTracing } from './tracer/trace';
 const promisedPostMessage = promisePostMessage();
 
 const script = document.createElement('script');
-script.src = chrome.extension.getURL('js/tracer.js');
+script.src = chrome.runtime.getURL('js/tracer.js');
 document.body.appendChild(script);
 script.onload = async () => {
   const isAngular = await HANDLERS.isAngular();
