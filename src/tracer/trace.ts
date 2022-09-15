@@ -7,7 +7,8 @@ export interface NodeBoundary {
     height: number;
     name: string;
     nodeName: string;
-    level;
+    level: number;
+    componentRef: any;
 }
 
 export interface NodePrefix {
@@ -109,10 +110,11 @@ function createNodeBoundary(el, level): NodeBoundary | null  {
 
         const componentDescr = components.find(component => component.name === componentName)
         if (!componentDescr) {
+            const componentDef = component.constructor.ɵcmp;
             components.push({
                 name: componentName,
-                onPush: component.constructor.ɵcmp.onPush,
-                selectors: component.constructor.ɵcmp.selectors,
+                onPush: componentDef.onPush,
+                selectors: componentDef.selectors,
                 enabled: false,
                 count: 1
             });
@@ -146,7 +148,8 @@ function createNodeBoundary(el, level): NodeBoundary | null  {
                     height: rect.height,
                     name: componentName,
                     nodeName: nodeName,
-                    level: level
+                    level: level,
+                    componentRef: component
                 };
             }
         }
@@ -208,7 +211,7 @@ function clearCanvas(canvas): void {
 
 function _draw(nodes: NodeBoundary[]): void {
     _canvas = ensureCanvas(_canvas, 'components', 99998);
-    _canvasHover = ensureCanvas(_canvasHover, 'tooltip', 99999, 200, 50);
+    _canvasHover = ensureCanvas(_canvasHover, 'tooltip', 99999, 700, 700);
     const canvas = _canvas;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -346,6 +349,39 @@ function ensureCanvas(canvas, id, zIndex, width?, height?): void {
     return canvas;
 }
 
+function getComponentInstanceInfoCmp(component: any): string[] {
+    const detail = component.constructor.ɵcmp;
+    return [
+        `id: ${detail.id}`,
+        `exportAs: ${detail.exportAs}`,
+        `onPush: ${detail.onPush}`,
+        `standalone: ${detail.standalone}`,
+        `selector: ${detail.selectors.join(' ')}`,
+        `inputs: ${Object.keys(detail.inputs).map((key) => `${key} = ${JSON.stringify(component[key])}`)}`,
+        `outputs: ${Object.keys(detail.outputs).map((key) => `${key}`)}`,
+    ];
+}
+
+function getComponentInstanceInfo(found: NodeBoundary): string[] {
+    const component = found.componentRef;
+    // const detail = component.constructor.ɵcmp;
+
+    const result = [
+        `name: ${found.name}`,
+      ...getComponentInstanceInfoCmp(found.componentRef)
+    ];
+
+    // const directives = detail.directiveDefs && detail.directiveDefs();
+    //
+    // if (directives && directives.length) {
+    //     directives
+    //       .map(dir => getComponentInstanceInfoCmp(dir))
+    //       .reduce((acc, current) => [...acc, ...current], result)
+    // }
+
+    return result;
+}
+
 function tooltipListener(tooltipCanvas, nodes,  e) {
     let mouseX = e.clientX;
     let mouseY = e.clientY;
@@ -361,7 +397,8 @@ function tooltipListener(tooltipCanvas, nodes,  e) {
     if (found) {
         let ctx = (<any>tooltipCanvas).getContext('2d');
         ctx.clearRect(0, 0, (<any>tooltipCanvas).width, (<any>tooltipCanvas).height);
-        ctx.fillText(found.name, 5, 15);
+
+        getComponentInstanceInfo(found).forEach((text, i) => ctx.fillText(text, 40, (i + 1) * 15));
         tooltipCanvas.style.left = mouseX + "px";
         tooltipCanvas.style.top = mouseY + "px";
     }
