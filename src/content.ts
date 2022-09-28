@@ -21,7 +21,7 @@ script.onload = async () => {
 
 const HANDLERS = {
   isAngular: () => promisedPostMessage.postMessage('isAngular'),
-  findPrefixes: () => promisedPostMessage.postMessage('findPrefixes'),
+  findPrefixes: options => promisedPostMessage.postMessage('findPrefixes', options),
   toggleCover: enable => promisedPostMessage.postMessage('toggleCover', enable),
   toggleTracing: enable => promisedPostMessage.postMessage('toggleTracing', enable),
   togglePrefix: prefixes => promisedPostMessage.postMessage('togglePrefix', prefixes),

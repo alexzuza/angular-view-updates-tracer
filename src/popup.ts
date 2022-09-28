@@ -11,6 +11,7 @@ let currentSortFn: (a: NodeComponent, b: NodeComponent) => number = sortByNameFn
 function onDOMContentLoaded() {
     const traceSwitcherCbx = document.getElementById('traceSwitcherCbx') as HTMLInputElement;
     const switcherCoverCbx = document.getElementById('switcherCoverCbx') as HTMLInputElement;
+    const autoDisplayBlockCbx = document.getElementById('autoDisplayBlockCbx') as HTMLInputElement;
     const errorElem = document.getElementById('error');
     const switcherElem = document.getElementById('switcher');
 
@@ -19,6 +20,29 @@ function onDOMContentLoaded() {
     //     switcherElem.scrollHeight;
     //     switcherElem.classList.add('loaded');
     // });
+
+    chrome.storage.local.get('ngAutoDisplayBlockEnabled', ({ ngAutoDisplayBlockEnabled }) => {
+        autoDisplayBlockCbx.checked = !!ngAutoDisplayBlockEnabled;
+    });
+
+    autoDisplayBlockCbx.addEventListener('change', e => {
+        const enabled = !!(<HTMLInputElement>e.target).checked;
+        chrome.storage.local.set({ngAutoDisplayBlockEnabled: enabled}, function() {
+            console.log('ngAutoDisplayBlockEnabled is set to ' + enabled);
+        });
+
+        chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+
+            chrome.tabs.sendMessage(tabs[0].id, {
+                type: 'findPrefixes',
+                payload: {
+                    displayBlock: autoDisplayBlockCbx.checked
+                }
+            });
+            updateUi();
+        });
+    });
+
     traceSwitcherCbx.addEventListener('change', e => {
         const enabled = (<HTMLInputElement>e.target).checked;
         // console.log('popup.ts traceSwitcherCbx enabled: ', enabled);
@@ -273,7 +297,10 @@ function onDOMContentLoaded() {
         chrome.tabs.sendMessage(
           id,
           {
-              type: 'findPrefixes'
+              type: 'findPrefixes',
+              payload: {
+                  displayBlock: autoDisplayBlockCbx.checked
+              }
           },
           ({ prefixes, components }) => {
               // console.log('sendMessageToFindPrefixes');

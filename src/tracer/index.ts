@@ -27,7 +27,7 @@ const HANDLERS = {
   toggleCover: enable => toggleCover(enable),
   toggleTracing: enable => toggleTracing(enable),
   isAngular: () => isAngular(),
-  findPrefixes: () => findPrefixes(),
+  findPrefixes: options => findPrefixes(options),
   clear: () => clear()
 };
 

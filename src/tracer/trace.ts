@@ -1,3 +1,7 @@
+export interface FindPrefixesOptions {
+    displayBlock: boolean;
+}
+
 export interface NodeBoundary {
     top: number;
     left: number;
@@ -40,6 +44,10 @@ let prefixes: NodePrefix[] = [];
 let components: NodeComponent[] = [];
 let position: ComponentTextPosition = 'topLeft';
 let nameOrSelector: NameOrSelector = 'selector';
+let extensionDebugLogEnabled = false;
+const ng = window['ng'];
+
+const originalDisplay = new Map<string, string>();
 
 export function isAngular() {
     const isAngular = window['ng'] && !!window['Zone'];
@@ -48,19 +56,11 @@ export function isAngular() {
     };
 }
 
-export function findPrefixes() {
+export function findPrefixes(options: FindPrefixesOptions) {
+    // debug('Find prefixes', options);
     reset();
-    const getAllAngularRootElements = window['getAllAngularRootElements']
-
-    if (getAllAngularRootElements) {
-        // console.log('findPrefixes: ', getAllAngularRootElements);
-        _nodes = [];
-        let rootEl = getAllAngularRootElements()[0];
-        recurse(rootEl, 0, _nodes);
-    }
-
-    // console.log('findPrefixes prefixes:',  prefixes);
-    // components.sort((a, b) => a.name.localeCompare(b.name));
+    let rootEl = document.querySelector('body');
+    recurse(rootEl, 0, _nodes, options);
 
     return {
         prefixes,
@@ -74,24 +74,22 @@ function reset(): void {
     components = [];
 }
 
-function recurse(el, level, nodes: NodeBoundary[]) {
-    const nodeBoundary = createNodeBoundary(el, level);
+function recurse(el: ChildNode, level: number, nodes: NodeBoundary[], options: FindPrefixesOptions) {
+    const nodeBoundary = createNodeBoundary(el, level, options);
     if (nodeBoundary) {
         nodes.push(nodeBoundary);
     }
 
-    el && el.childNodes && el.childNodes.forEach(n => recurse(n, level++, nodes));
+    el && el.childNodes && el.childNodes.forEach(n => recurse(n, level++, nodes, options));
 }
 
 const regexp = /([a-zA-Z]+)-([a-zA-Z]+)/i;
 
-function createNodeBoundary(el, level): NodeBoundary | null  {
-
-    const ng = window['ng'];
+function createNodeBoundary(el, level, options: FindPrefixesOptions): NodeBoundary | null  {
     // Angular 8.0.0
     // const probe = ng.probe(el);
 
-    let hostElement;
+    let hostElement: HTMLElement;
     let component;
 
     try {
@@ -101,6 +99,9 @@ function createNodeBoundary(el, level): NodeBoundary | null  {
     }
 
     if (hostElement && component) {
+        const componentDef = component.constructor.ɵcmp;
+        const componentId = componentDef.id;
+
         const componentName = component.constructor.name;
         // A8
         // const nodeName = probe.nativeNode.nodeName;
@@ -108,9 +109,10 @@ function createNodeBoundary(el, level): NodeBoundary | null  {
         //A10
         const nodeName = hostElement.tagName.toLowerCase();
 
+        handleDisplayBlock(options.displayBlock, componentId, hostElement);
+
         const componentDescr = components.find(component => component.name === componentName)
         if (!componentDescr) {
-            const componentDef = component.constructor.ɵcmp;
             components.push({
                 name: componentName,
                 onPush: componentDef.onPush,
@@ -192,7 +194,7 @@ function setEnabled(enabled: boolean) {
 }
 
 export function clear(): void {
-    // console.log('trace.ts: clear');
+    // debug('trace.ts: clear');
     clearCanvas(_canvas);
 }
 
@@ -368,7 +370,7 @@ function getComponentInstanceInfo(found: NodeBoundary): string[] {
 
     const result = [
         `name: ${found.name}`,
-      ...getComponentInstanceInfoCmp(found.componentRef)
+        ...getComponentInstanceInfoCmp(found.componentRef)
     ];
 
     // const directives = detail.directiveDefs && detail.directiveDefs();
@@ -409,4 +411,23 @@ function tooltip(nodes: NodeBoundary[]) {
     let tooltipCanvas = document.getElementById("tooltip");
     listener = tooltipListener.bind(this, tooltipCanvas, nodes);
     document.body.addEventListener('mousemove', listener);
+}
+
+function debug(...args): void {
+    if (extensionDebugLogEnabled) {
+        console.log(...args);
+    }
+}
+
+function handleDisplayBlock(displayBlock: boolean, componentId: string, hostElement): void {
+    // display block 1) this is initialization phase - remember display values for all outlined components
+    if (displayBlock && !hostElement.style.display) {
+        originalDisplay.set(componentId, hostElement.style.display);
+        hostElement.style.display = 'block';
+    }
+
+    // display block 2) this is when user clicks toggle display block - restore display (second and next rerender)
+    if (!displayBlock && originalDisplay.has(componentId)) {
+        hostElement.style.display = originalDisplay.get(componentId);
+    }
 }
