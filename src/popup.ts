@@ -1,7 +1,10 @@
-import { NodeComponent, NodePrefix } from './tracer/trace';
+import { ComponentTreeNode, FindPrefixesResult, NodeComponent, NodePrefix } from './tracer/trace';
+import { createCheckbox, createInput, createLabel } from './util';
+import { buildGraph } from './graph/graph';
 
 let storedPrefixes: NodePrefix[];
 let storedComponents: NodeComponent[];
+let storedRoot: ComponentTreeNode;
 
 const sortByNameFn = (a: NodeComponent, b: NodeComponent) => a.name.toLocaleLowerCase().localeCompare(b.name.toLocaleLowerCase());
 const sortByCountFn = (a: NodeComponent, b: NodeComponent) => b.count - a.count === 0 ? sortByNameFn(a, b) : b.count - a.count;
@@ -185,15 +188,27 @@ function onDOMContentLoaded() {
         const nameOrSelectorValue = componentNameOrSelectorSelect.value;
 
         removeComponents();
-        createComponentInputs(storedComponents,
+        createComponentInputs(
+          storedComponents,
           nameOrSelectorValue,
           filterText
-            ? component => nameOrSelectorValue === 'selector' ? !!component.selectors.join(', ').match(new RegExp(filterText)) : !!component.name.match(new RegExp(filterText))
+            ? component => nameOrSelectorValue === 'selector'
+              ? !!component.selectors.join(', ').match(new RegExp(filterText, 'i'))
+              : !!component.name.match(new RegExp(filterText, 'i'))
             : null,
           currentSortFn,
           masterCheckBox
         ).forEach(component => divComponents.appendChild(component));
+
         updateUi();
+    }
+
+    function createComponentTree(level: number, div: HTMLDivElement): void {
+        storedRoot.children.forEach((component: ComponentTreeNode) => {
+            const label = createLabel('??', component.name);
+            div.appendChild(label)
+        })
+
     }
 
     function createPrefixesInputs(prefixes: NodePrefix[]): HTMLDivElement[] {
@@ -204,28 +219,15 @@ function onDOMContentLoaded() {
             mainDiv.style.backgroundColor = color;
 
             const id = `pref-${prefix.prefix}`;
-            const label = document.createElement('label');
-            label.htmlFor = id;
-            label.textContent = `${prefix.prefix} (${prefix.count})`;
-
-            const prefixCb = document.createElement('input');
-            prefixCb.id = id;
-            prefixCb.type = 'checkbox';
-            prefixCb.addEventListener('change', updateUi);
+            const label = createLabel(id, `${prefix.prefix} (${prefix.count})`);
+            const prefixCb = createCheckbox(id, updateUi);
             prefixCb.dataset.prefix = prefix.prefix;
-            prefixCb.checked = false;
 
-            const inputId = `input-${prefix.prefix}`;
-            const inputColor = document.createElement('input');
-            inputColor.id = inputId;
-            inputColor.type = 'text';
-            inputColor.dataset.prefix = prefix.prefix;
-            inputColor.value = color;
-
-            inputColor.addEventListener('input', () => {
+            const inputColor = createInput(`input-${prefix.prefix}`, color, () => {
                 mainDiv.style.backgroundColor = inputColor.value;
                 updateUi();
-            });
+            })
+            inputColor.dataset.prefix = prefix.prefix;
 
             mainDiv.appendChild(prefixCb);
             mainDiv.appendChild(label);
@@ -242,8 +244,6 @@ function onDOMContentLoaded() {
       sort?: (a: NodeComponent, b: NodeComponent) => number,
       masterCheckBox?: boolean | undefined,
     ): HTMLDivElement[] {
-        // console.log(`filter: ${filter} sort ${sort} masterCheckBox: ${masterCheckBox}`); // TODO
-
         return components
           .filter(component => !filter || (filter && filter(component)))
           .sort(sort || sortByNameFn)
@@ -254,17 +254,15 @@ function onDOMContentLoaded() {
               mainDiv.style.backgroundColor = color;
 
               const id = `pref-${component.name}`;
-              const label = document.createElement('label');
-              label.htmlFor = id;
-              label.textContent = `${nameOrSelector === 'selector' ? component.selectors.join(', ') :  component.name} (${component.count})`;
+              const label = createLabel(id,
+                `${nameOrSelector === 'selector'
+                  ? component.selectors.join(', ')
+                  : component.name} (${component.count})`);
 
               const changeDetectionEl = document.createElement('span');
               changeDetectionEl.textContent = `${component.onPush ? 'OnPush' : 'Default'}`;
 
-              const prefixCb = document.createElement('input');
-              prefixCb.id = id;
-              prefixCb.type = 'checkbox';
-              prefixCb.addEventListener('change', updateUi);
+              const prefixCb = createCheckbox(id, updateUi)
               prefixCb.dataset.component = component.name;
 
               if (masterCheckBox === false || masterCheckBox === true) {
@@ -273,17 +271,11 @@ function onDOMContentLoaded() {
                 prefixCb.checked = !!filter && filter(component);
               }
 
-              const inputId = `input-${component.name}`;
-              const inputColor = document.createElement('input');
-              inputColor.id = inputId;
-              inputColor.type = 'text';
-              inputColor.dataset.component = component.name;
-              inputColor.value = color;
-
-              inputColor.addEventListener('input', () => {
+              const inputColor = createInput(`input-${component.name}`, color, () => {
                   mainDiv.style.backgroundColor = inputColor.value;
                   updateUi();
               });
+              inputColor.dataset.component = component.name;
 
               mainDiv.appendChild(prefixCb);
               mainDiv.appendChild(label);
@@ -302,14 +294,15 @@ function onDOMContentLoaded() {
                   displayBlock: autoDisplayBlockCbx.checked
               }
           },
-          ({ prefixes, components }) => {
-              // console.log('sendMessageToFindPrefixes');
-
+          ({ prefixes, components, root }: FindPrefixesResult) => {
               if (prefixes && prefixes.length) {
                   storedComponents = components;
                   storedPrefixes = prefixes;
+                  storedRoot = root;
                   buildPopup(prefixes, components);
-                  // updateUi(); // draw component on popup open // TODO needed?
+                  const s = buildGraph(storedRoot);
+                  document.querySelector('#mermaid').innerHTML = s;
+                  console.log(s);
               }
           }
         );

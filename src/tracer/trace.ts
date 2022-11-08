@@ -38,10 +38,15 @@ export interface TogglePrefixesOptions {
   nameOrSelector: NameOrSelector
 }
 
+export interface FindPrefixesResult {
+  prefixes: NodePrefix[],
+  components: NodeComponent[],
+  root: ComponentTreeNode
+}
+
 export interface ComponentTreeNode {
   id: string;
   name: string;
-  parent: ComponentTreeNode;
   children: ComponentTreeNode[];
 }
 
@@ -53,7 +58,7 @@ let _canvas = null;
 let _canvasHover = null;
 let listener;
 let _cover = false;
-let _nodes: NodeBoundary[];
+let nodes: NodeBoundary[];
 let prefixes: NodePrefix[] = [];
 let components: NodeComponent[] = [];
 let position: ComponentTextPosition = 'topLeft';
@@ -70,38 +75,53 @@ export function isAngular() {
   };
 }
 
-export function findPrefixes(options: FindPrefixesOptions) {
+export function findPrefixes(options: FindPrefixesOptions): FindPrefixesResult {
   // debug('Find prefixes', options);
   reset();
   let rootEl = document.querySelector('body');
 
+  const pseudoRoot: ComponentTreeNode = {
+    id: 'root',
+    name: 'root',
+    children: []
+  };
 
-  // let treeNodeRoot: ComponentTreeNode = {
-  //
-  // };
-  recurse(rootEl, 0, _nodes, options, null);
+  const newParent = recurse(rootEl, 0, options, pseudoRoot);
 
   return {
     prefixes,
-    components
+    components,
+    root: newParent || pseudoRoot
   };
 }
 
 function reset(): void {
-  _nodes = [];
+  nodes = [];
   prefixes = [];
   components = [];
 }
 
-function recurse(el: ChildNode, level: number, nodes: NodeBoundary[], options: FindPrefixesOptions, parent: ComponentTreeNode) {
-  createNodeBoundary(el, level, nodes, options);
+function recurse(el: ChildNode, level: number, options: FindPrefixesOptions, parent: ComponentTreeNode): ComponentTreeNode | null {
+  const newComponent = processElement(el, level, options);
 
-  el && el.childNodes && el.childNodes.forEach(n => recurse(n, level++, nodes, options, null));
+  const usedParent = newComponent || parent;
+  el && el.childNodes && el.childNodes.forEach(n => {
+    const child = recurse(n, level++, options, usedParent);
+    if (child) {
+      // child.parent = usedParent;
+
+      if (usedParent) {
+        usedParent.children.push(child);
+      }
+    }
+  });
+
+  return newComponent;
 }
 
 const regexp = /([a-zA-Z]+)-([a-zA-Z]+)/i;
 
-function createNodeBoundary(el: ChildNode, level: number, nodes: NodeBoundary[], options: FindPrefixesOptions): NodeBoundary | null  {
+function processElement(el: ChildNode, level: number, options: FindPrefixesOptions): ComponentTreeNode | null  {
   let hostElement: HTMLElement;
   let component;
 
@@ -122,9 +142,13 @@ function createNodeBoundary(el: ChildNode, level: number, nodes: NodeBoundary[],
 
     handleComponent(componentName, componentDef);
     handlePrefix(tageName);
-    handleNodeBoundary(el, componentName, tageName, level, component, nodes);
+    handleNodeBoundary(el, componentName, tageName, level, component);
 
-    // TODO return treeNode
+    return {
+      id: componentId,
+      name: componentName,
+      children: []
+    };
   }
 
   return null;
@@ -163,7 +187,7 @@ function handlePrefix(tageName: string): void {
   }
 }
 
-function handleNodeBoundary(el, componentName: string, tageName: string, level: number, component: any, nodes: NodeBoundary[]): void {
+function handleNodeBoundary(el, componentName: string, tageName: string, level: number, component: any): void {
   if (el.getBoundingClientRect) {
     const rect = el.getBoundingClientRect();
     const node = {
@@ -186,7 +210,7 @@ function handleNodeBoundary(el, componentName: string, tageName: string, level: 
 export function toggleCover(enabled: boolean) {
   _cover = enabled;
   clearCanvas(_canvas);
-  _draw(_nodes);
+  _draw(nodes);
 }
 
 export function togglePrefix(payload: { prefixes: NodePrefix[], components: NodeComponent[], textPosition: ComponentTextPosition, nameOrSelector: NameOrSelector }) {
@@ -196,7 +220,7 @@ export function togglePrefix(payload: { prefixes: NodePrefix[], components: Node
   nameOrSelector = payload.nameOrSelector;
 
   clearCanvas(_canvas);
-  _draw(_nodes);
+  _draw(nodes);
 }
 
 export function toggleTracing(toggle) {
@@ -204,8 +228,8 @@ export function toggleTracing(toggle) {
   prefixes = toggle.prefixes;
 
   if (toggle.enabled) {
-    _draw(_nodes);
-    tooltip(_nodes);
+    _draw(nodes);
+    tooltip(nodes);
   } else {
     clearCanvas(_canvas);
     document.body.removeEventListener('mousemove', listener);
